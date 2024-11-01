@@ -1,58 +1,72 @@
 <template>
   <div>
-    <form @submit.prevent="submitForm">
-      <h2>Peminjaman Barang</h2>
+    <form
+      @submit.prevent="submitForm"
+      class="mb-3 p-3 shadow-sm bg-white rounded"
+    >
+      Kode lengkap template pada ItemForm akan menjadi seperti ini:
 
-      <div>
-        <label for="kode">Kode Barang:</label>
+      <template>
+        <div>
+          <form
+            @submit.prevent="submitForm"
+            class="mb-3 p-3 shadow-sm bg-white rounded"
+          >
+            <div class="mb-3">
+              <label for="kode" class="form-label">Kode Barang</label>
 
-        <input type="text" v-model="form.kode" id="kode" :disabled="true" />
-      </div>
+              <input
+                type="number"
+                v-model="form.kode"
+                id="kode"
+                class="form-control"
+                :disabled="isEdit"
+                required
+              />
+            </div>
 
-      <div>
-        <label for="nama">Nama Produk:</label>
+            <div class="mb-3">
+              <label for="nama" class="form-label">Nama Barang</label>
 
-        <input type="text" v-model="form.nama" id="nama" :disabled="true" />
-      </div>
+              <input
+                type="text"
+                v-model="form.nama"
+                id="nama"
+                class="form-control"
+                required
+              />
+            </div>
 
-      <div>
-        <label for="deskripsi">Deskripsi:</label>
+            <div class="mb-3">
+              <label for="deskripsi" class="form-label">Deskripsi</label>
 
-        <input
-          type="text"
-          v-model="form.deskripsi"
-          id="deskripsi"
-          :disabled="true"
-        />
-      </div>
+              <input
+                type="text"
+                v-model="form.deskripsi"
+                id="deskripsi"
+                class="form-control"
+                required
+              />
+            </div>
 
-      <div>
-        <label for="tanggal_pinjam">Tanggal Pinjam:</label>
+            <div class="mb-3">
+              <label for="stok" class="form-label">Stok</label>
 
-        <input type="date" v-model="form.tanggal_pinjam" id="tanggal_pinjam" />
-      </div>
+              <input
+                type="number"
+                v-model="form.stok"
+                id="stok"
+                class="form-control"
+                required
+              />
+            </div>
 
-      <div>
-        <label for="tanggal_kembali">Tanggal Kembali:</label>
-
-        <input
-          type="date"
-          v-model="form.tanggal_kembali"
-          id="tanggal_kembali"
-        />
-      </div>
-
-      <div>
-        <label for="jumlah_pinjam">Jumlah Pinjam:</label>
-
-        <input type="number" v-model="form.jumlah_pinjam" id="jumlah_pinjam" />
-      </div>
-
-      <div class="button-container">
-        <button type="button" @click="cancelForm">Batal</button>
-
-        <button type="submit">Ajukan</button>
-      </div>
+            <button type="submit" class="btn btn-success">
+              {{ isEdit ? "Simpan Perubahan" : "Tambah Barang" }}
+            </button>
+          </form>
+        </div>
+      </template>
     </form>
   </div>
 </template>
@@ -111,72 +125,46 @@ export default {
 
 <style scoped>
 form {
-  display: flex;
-
-  flex-direction: column;
-
-  width: 100%;
-
-  max-width: 400px;
-
-  margin: auto;
-
-  background: #f0f0f0;
-
-  padding: 20px;
+  background-color: #fff;
 
   border-radius: 8px;
 
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-h2 {
-  text-align: center;
-
-  margin-bottom: 20px;
+.mb-3 {
+  margin-bottom: 1rem;
 }
 
-label {
-  margin-top: 10px;
+.form-label {
+  font-weight: bold;
+
+  color: #4b3f6b;
 }
 
-input {
-  padding: 5px;
+.form-control {
+  border-radius: 4px;
 
-  margin-top: 5px;
+  border: 1px solid #ccc;
 }
 
-.button-container {
-  display: flex;
+.form-control:focus {
+  border-color: #4b3f6b;
 
-  justify-content: space-between;
-
-  margin-top: 20px;
+  box-shadow: 0 0 0 0.2rem rgba(75, 63, 107, 0.25);
 }
 
-button {
+.btn-success {
   background-color: #4caf50;
 
-  color: white;
-
-  border: none;
-
-  padding: 10px;
-
-  cursor: pointer;
-
-  border-radius: 4px;
+  border-color: #4caf50;
 }
 
-button:hover {
+.btn-success:hover {
   background-color: #45a049;
-}
 
-button[type="button"] {
-  background-color: #f44336;
-}
-
-button[type="button"]:hover {
-  background-color: #e31b0c;
+  border-color: #45a049;
 }
 </style>
