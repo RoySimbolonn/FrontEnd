@@ -1,4 +1,3 @@
-<!-- App.vue -->
 <template>
   <div id="app">
     <MainHeader
@@ -20,8 +19,7 @@
       'with-header': isHeaderVisible,
       'no-header': !isHeaderVisible
     }">
-      <component 
-        :is="currentRole === 'admin' ? 'AdminView' : 'UserView'"
+      <router-view
         :currentComponent="currentComponent"
         @add-item="handleAddItem"
         @edit-item="handleEditItem"
@@ -44,26 +42,43 @@
 <script>
 import MainHeader from "./components/dashboard/MainHeader.vue";
 import MainSidebar from "./components/dashboard/MainSidebar.vue";
-import AdminView from "./views/AdminView.vue";
-import UserView from "./views/UserView.vue";
 import { EventBus } from "./eventBus";
 
 export default {
   name: "App",
   components: {
     MainHeader,
-    MainSidebar,
-    AdminView,
-    UserView
+    MainSidebar
   },
   
   data() {
     return {
-      currentRole: localStorage.getItem('userRole') || 'admin',
+      currentRole: localStorage.getItem('role') || 'admin',
       currentComponent: 'items',
       isSidebarVisible: localStorage.getItem('sidebarVisible') === 'true',
       isHeaderVisible: localStorage.getItem('headerVisible') === 'true',
     };
+  },
+
+  watch: {
+    currentRole: {
+      handler(newRole) {
+        const isAuthenticated = Boolean(localStorage.getItem('auth'));
+        if (!isAuthenticated) {
+          this.$router.push('/login');
+          return;
+        }
+
+        // Redirect based on role
+        const currentPath = this.$route.path;
+        if (newRole === 'admin' && !currentPath.includes('/admin')) {
+          this.$router.push({ name: 'admin', params: { component: this.currentComponent }});
+        } else if (newRole === 'user' && !currentPath.includes('/user')) {
+          this.$router.push({ name: 'user', params: { component: this.currentComponent }});
+        }
+      },
+      immediate: true
+    }
   },
 
   methods: {
@@ -78,12 +93,34 @@ export default {
     },
 
     updateRole(role) {
-      this.currentRole = role;
-      localStorage.setItem('userRole', role);
+      const isAuthenticated = Boolean(localStorage.getItem('auth'));
+      const authRole = localStorage.getItem('role');
+
+      if (isAuthenticated && authRole === role) {
+        this.currentRole = role;
+        localStorage.setItem('role', role);
+        this.$router.push({ 
+          name: role, 
+          params: { component: this.currentComponent }
+        });
+      } else {
+        alert("You do not have permission to switch to this role.");
+        this.$router.push({ name: 'login' });
+      }
     },
 
     navigateTo(component) {
+      const isAuthenticated = Boolean(localStorage.getItem('auth'));
+      if (!isAuthenticated) {
+        this.$router.push({ name: 'login' });
+        return;
+      }
+
       this.currentComponent = component;
+      this.$router.push({ 
+        name: this.currentRole, 
+        params: { component }
+      });
     },
 
     handleAddItem(item) {
@@ -97,6 +134,15 @@ export default {
     handleDeleteItem(itemId) {
       EventBus.emit('item-deleted', itemId);
     },
+
+    handleKeydown(e) {
+      if (e.ctrlKey && e.key === 'b') {
+        this.toggleSidebar();
+      }
+      if (e.ctrlKey && e.key === 'h') {
+        this.toggleHeader();
+      }
+    }
   },
 
   created() {
@@ -112,19 +158,12 @@ export default {
     }
 
     // Keyboard shortcuts
-    window.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.key === 'b') {
-        this.toggleSidebar();
-      }
-      if (e.ctrlKey && e.key === 'h') {
-        this.toggleHeader();
-      }
-    });
+    window.addEventListener('keydown', this.handleKeydown);
   },
 
-  beforeUnmount() {
+  unmounted() {
     window.removeEventListener('keydown', this.handleKeydown);
-  },
+  }
 };
 </script>
 
@@ -134,17 +173,20 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   height: 100vh;
+  position: relative;
+  overflow-x: hidden;
 }
 
 .main-container {
   transition: all 0.3s ease;
   padding: 20px;
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
+  background-color: #f5f5f5;
 }
 
 /* Layout Classes */
 .main-container.with-sidebar {
-  margin-left: 200px; /* Sesuaikan dengan lebar sidebar */
+  margin-left: 250px;
 }
 
 .main-container.no-sidebar {
@@ -152,7 +194,7 @@ export default {
 }
 
 .main-container.with-header {
-  padding-top: 80px; /* Sesuaikan dengan tinggi header + padding */
+  padding-top: 80px;
 }
 
 .main-container.no-header {
@@ -178,10 +220,12 @@ export default {
   cursor: pointer;
   opacity: 0.8;
   transition: opacity 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .control-btn:hover {
   opacity: 1;
+  background-color: #5f4d8a;
 }
 
 /* Responsive Design */
@@ -194,6 +238,10 @@ export default {
     bottom: 10px;
     right: 10px;
     flex-direction: column;
+  }
+
+  .main-container {
+    padding: 10px;
   }
 }
 </style>
