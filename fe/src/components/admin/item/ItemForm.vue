@@ -1,170 +1,193 @@
 <template>
-  <div>
-    <form
-      @submit.prevent="submitForm"
-      class="mb-3 p-3 shadow-sm bg-white rounded"
-    >
-      Kode lengkap template pada ItemForm akan menjadi seperti ini:
+  <div class="form-container">
+    <h2 class="form-title">{{ isEdit ? 'Edit Barang' : 'Tambah Barang Baru' }}</h2>
+    <form @submit.prevent="submitForm" class="item-form">
+      <div class="form-group">
+        <label for="kode">Kode Barang:</label>
+        <input
+          type="text"
+          id="kode"
+          v-model="form.kode"
+          class="form-control"
+          :disabled="isEdit"
+          required
+        />
+      </div>
 
-      <template>
-        <div>
-          <form
-            @submit.prevent="submitForm"
-            class="mb-3 p-3 shadow-sm bg-white rounded"
-          >
-            <div class="mb-3">
-              <label for="kode" class="form-label">Kode Barang</label>
+      <div class="form-group">
+        <label for="nama">Nama Barang:</label>
+        <input
+          type="text"
+          id="nama"
+          v-model="form.nama"
+          class="form-control"
+          required
+        />
+      </div>
 
-              <input
-                type="number"
-                v-model="form.kode"
-                id="kode"
-                class="form-control"
-                :disabled="isEdit"
-                required
-              />
-            </div>
+      <div class="form-group">
+        <label for="deskripsi">Deskripsi:</label>
+        <textarea
+          id="deskripsi"
+          v-model="form.deskripsi"
+          class="form-control"
+          rows="3"
+          required
+        ></textarea>
+      </div>
 
-            <div class="mb-3">
-              <label for="nama" class="form-label">Nama Barang</label>
+      <div class="form-group">
+        <label for="stok">Stok:</label>
+        <input
+          type="number"
+          id="stok"
+          v-model="form.stok"
+          class="form-control"
+          min="0"
+          required
+        />
+      </div>
 
-              <input
-                type="text"
-                v-model="form.nama"
-                id="nama"
-                class="form-control"
-                required
-              />
-            </div>
-
-            <div class="mb-3">
-              <label for="deskripsi" class="form-label">Deskripsi</label>
-
-              <input
-                type="text"
-                v-model="form.deskripsi"
-                id="deskripsi"
-                class="form-control"
-                required
-              />
-            </div>
-
-            <div class="mb-3">
-              <label for="stok" class="form-label">Stok</label>
-
-              <input
-                type="number"
-                v-model="form.stok"
-                id="stok"
-                class="form-control"
-                required
-              />
-            </div>
-
-            <button type="submit" class="btn btn-success">
-              {{ isEdit ? "Simpan Perubahan" : "Tambah Barang" }}
-            </button>
-          </form>
-        </div>
-      </template>
+      <div class="button-group">
+        <button type="button" class="btn btn-secondary" @click="$emit('cancel')">
+          Batal
+        </button>
+        <button type="submit" class="btn btn-primary">
+          {{ isEdit ? 'Simpan Perubahan' : 'Tambah Barang' }}
+        </button>
+      </div>
     </form>
   </div>
 </template>
 
 <script>
 export default {
+  name: 'ItemForm',
   props: {
-    item: Object,
-
-    isEdit: Boolean,
+    item: {
+      type: Object,
+      required: true
+    },
+    isEdit: {
+      type: Boolean,
+      default: false
+    }
   },
 
   data() {
     return {
       form: {
-        kode: this.item ? this.item.kode : "",
-
-        nama: this.item ? this.item.nama : "",
-
-        deskripsi: this.item ? this.item.deskripsi : "",
-
-        tanggal_pinjam: "",
-
-        tanggal_kembali: "",
-
-        jumlah_pinjam: 1,
-      },
-    };
+        kode: '',
+        nama: '',
+        deskripsi: '',
+        stok: 0
+      }
+    }
   },
+
+  watch: {
+    item: {
+      handler(newItem) {
+        if (newItem) {
+          this.form = {
+            kode: newItem.kode || '',
+            nama: newItem.nama || '',
+            deskripsi: newItem.deskripsi || '',
+            stok: newItem.stok || 0
+          }
+        }
+      },
+      immediate: true
+    }
+  },
+
   methods: {
     submitForm() {
-      // Emit custom event 'submit' dengan payload data form
-
-      this.$emit("submit", { ...this.form });
-    },
-
-    cancelForm() {
-      // Emit custom event 'cancel' tanpa payload
-
-      this.$emit("cancel");
-    },
-  },
-  watch: {
-    item(newItem) {
-      if (newItem) {
-        this.form.kode = newItem.kode;
-
-        this.form.nama = newItem.nama;
-
-        this.form.deskripsi = newItem.deskripsi;
+      const formData = {
+        ...this.form,
+        stok: parseInt(this.form.stok),
+        kode: this.form.kode.toString()
       }
-    },
-  },
-};
+      this.$emit('submit', formData)
+    }
+  }
+}
 </script>
 
 <style scoped>
-form {
-  background-color: #fff;
-
-  border-radius: 8px;
-
+.form-container {
   padding: 20px;
-
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin: 0 auto;
 }
 
-.mb-3 {
-  margin-bottom: 1rem;
+.form-title {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
 }
 
-.form-label {
-  font-weight: bold;
+.item-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
 
-  color: #4b3f6b;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #555;
 }
 
 .form-control {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-
-  border: 1px solid #ccc;
+  font-size: 14px;
 }
 
 .form-control:focus {
   border-color: #4b3f6b;
-
-  box-shadow: 0 0 0 0.2rem rgba(75, 63, 107, 0.25);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(75, 63, 107, 0.2);
 }
 
-.btn-success {
-  background-color: #4caf50;
-
-  border-color: #4caf50;
+.button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 
-.btn-success:hover {
-  background-color: #45a049;
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
 
-  border-color: #45a049;
+.btn-primary {
+  background-color: #4b3f6b;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #3a3153;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
 }
 </style>

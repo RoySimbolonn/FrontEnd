@@ -42,7 +42,7 @@
 <script>
 import Modal from "@/components/Modal.vue";
 import ItemForm from "@/components/user/item/ItemForm.vue";
-import { EventBus } from "@/EventBus"; // Mengimpor EventBus
+import { EventBus } from "@/eventBus"; // Mengimpor EventBus
 
 export default {
   components: {

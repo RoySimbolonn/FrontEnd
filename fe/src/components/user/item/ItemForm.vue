@@ -2,16 +2,13 @@
   <div>
     <form @submit.prevent="submitForm">
       <h2>Peminjaman Barang</h2>
-
       <div>
         <label for="kode">Kode Barang:</label>
-
         <input type="text" v-model="form.kode" id="kode" :disabled="true" />
       </div>
 
       <div>
         <label for="nama">Nama Produk:</label>
-
         <input type="text" v-model="form.nama" id="nama" :disabled="true" />
       </div>
 

@@ -1,6 +1,10 @@
 <template>
   <div class="item-list">
     <h2>Daftar Barang</h2>
+    
+    <button @click="showAddForm" class="btn btn-primary mb-3">
+      Add Item
+    </button>
 
     <div class="table-responsive">
       <table>
@@ -15,18 +19,17 @@
         </thead>
 
         <tbody>
-          <tr v-for="item in items" :key="item.kode">
+          <tr v-for="item in filteredItems" :key="item.kode">
             <td>{{ item.kode }}</td>
-
             <td>{{ item.nama }}</td>
-
             <td>{{ item.deskripsi }}</td>
-
             <td>{{ item.stok }}</td>
-
             <td class="action-buttons">
-              <button class="borrow-btn" @click="borrowItem(item)">
-                Pinjam
+              <button class="edit-btn me-2" @click="editItem(item)">
+                Edit
+              </button>
+              <button class="delete-btn" @click="deleteItem(item.kode)">
+                Delete
               </button>
             </td>
           </tr>
@@ -34,86 +37,111 @@
       </table>
     </div>
 
-    <Modal :visible="showForm" @close="cancelBorrowForm">
+    <Modal :visible="showForm" @close="cancelForm">
       <ItemForm
         :item="selectedItem"
-        @submit="handleBorrow"
-        @cancel="cancelBorrowForm"
+        :isEdit="isEditing"
+        @submit="handleSubmit"
+        @cancel="cancelForm"
       />
     </Modal>
   </div>
 </template>
 
-
 <script>
-import Modal from "@/components/MainModels.vue";
+import { defineComponent } from 'vue'
+import Modal from "@/components/MainModels.vue"
+import ItemForm from "@/components/admin/item/ItemForm.vue"
+import { useItemStore } from "@/store/itemStore"
+import { EventBus } from "@/eventBus"
 
-import ItemForm from "@/components/user/item/ItemForm.vue";
-
-export default {
+export default defineComponent({
+  name: 'ItemList',
   components: {
     Modal,
-
     ItemForm,
   },
 
   data() {
     return {
-      items: [
-        {
-          kode: "2024001",
-
-          nama: "Acer Nitro 15 AN515-58",
-
-          deskripsi: "Intel Core i5 12500H, RTX 3050, RAM 8GB DDR4, LAYAR 15.6",
-
-          stok: 80,
-        },
-
-        {
-          kode: "2024002",
-
-          nama: "Lenovo LOQ 15 15IRH8",
-
-          deskripsi: "Intel Core i5 13450H, RTX 3050, RAM 8GB DDR4, LAYAR 15.6",
-
-          stok: 80,
-        },
-
-        // More items...
-      ],
-
       showForm: false,
-
       selectedItem: null,
-    };
+      searchQuery: "",
+      isEditing: false,
+    }
   },
+
+  computed: {
+    filteredItems() {
+      const query = this.searchQuery.toLowerCase()
+      return this.itemStore.items.filter(item => {
+        return item && (
+          (item.kode && item.kode.toString().toLowerCase().includes(query)) ||
+          (item.nama && item.nama.toLowerCase().includes(query))
+        )
+      })
+    }
+  },
+
   methods: {
-    borrowItem(item) {
-      this.selectedItem = { ...item };
-
-      this.showForm = true;
+    showAddForm() {
+      this.selectedItem = {
+        kode: '',
+        nama: '',
+        deskripsi: '',
+        stok: 0
+      }
+      this.isEditing = false
+      this.showForm = true
     },
 
-    handleBorrow(item) {
-      console.log("Borrow item:", item);
-
-      // Implementasikan logika peminjaman barang di sini
-
-      this.showForm = false;
+    editItem(item) {
+      this.selectedItem = { ...item }
+      this.isEditing = true
+      this.showForm = true
     },
 
-    cancelBorrowForm() {
-      this.showForm = false;
+    deleteItem(kode) {
+      if (confirm('Apakah Anda yakin ingin menghapus item ini?')) {
+        this.itemStore.deleteItem(kode)
+      }
+    },
 
-      this.selectedItem = null;
+    cancelForm() {
+      this.showForm = false
+      this.selectedItem = null
+      this.isEditing = false
+    },
+
+    handleSubmit(formData) {
+      if (this.isEditing) {
+        this.itemStore.updateItem(formData)
+      } else {
+        this.itemStore.addItem(formData)
+      }
+      this.cancelForm()
+    },
+
+    handleSearch(query) {
+      this.searchQuery = query || ''
     },
   },
-};
+
+  mounted() {
+    EventBus.on("search", this.handleSearch)
+  },
+
+  beforeUnmount() {
+    EventBus.off("search", this.handleSearch)
+  },
+
+  setup() {
+    const itemStore = useItemStore()
+    return { itemStore }
+  },
+})
 </script>
 
-
-Lakukan styling untuk komponen ini.
 
 <style scoped>
 .item-list {
@@ -157,19 +185,14 @@ th {
   overflow-x: auto;
 }
 
-/* Styling untuk baris tabel */
 tbody tr {
   transition: all 0.3s ease;
-  position: relative;
-  transform-origin: center;
 }
 
-/* Efek hover pada baris */
 tbody tr:hover {
   transform: scale(1.02);
   background-color: #f8f4ff;
   box-shadow: 0 4px 15px rgba(75, 63, 107, 0.2);
-  z-index: 1;
 }
 
 tr:nth-child(even) {
@@ -181,32 +204,24 @@ tr:nth-child(even) {
   text-align: center;
 }
 
-/* Styling untuk tombol */
 button {
   padding: 8px 12px;
   border: none;
   cursor: pointer;
   border-radius: 4px;
   font-size: 14px;
-  margin: 0 2px;
   transition: all 0.3s ease;
 }
 
 .borrow-btn {
   background-color: #754bc5;
   color: white;
-  position: relative;
-  overflow: hidden;
 }
 
-/* Efek hover pada tombol */
 .borrow-btn:hover {
   background-color: #5a37a0;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(117, 75, 197, 0.3);
 }
 
-/* Efek klik pada tombol */
 .borrow-btn:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(117, 75, 197, 0.3);
@@ -225,9 +240,7 @@ button {
   }
 
   tbody tr:hover {
-    transform: scale(
-      1.01
-    ); /* Mengurangi skala pada mobile untuk menghindari layout issues */
+    transform: scale(1.01);
   }
 }
 </style>

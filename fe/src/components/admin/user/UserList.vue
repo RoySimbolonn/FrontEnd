@@ -23,18 +23,14 @@
         <tbody>
           <tr v-for="user in users" :key="user.id">
             <td>{{ user.id }}</td>
-
             <td>{{ user.username }}</td>
-
             <td>{{ user.email }}</td>
-
             <td>{{ user.role }}</td>
 
             <td class="action-buttons">
               <button class="edit-btn" @click="$emit('edit-user', user)">
                 Edit
               </button>
-
               <button class="delete-btn" @click="deleteUser(user.id)">
                 Delete
               </button>
@@ -52,7 +48,6 @@ export default {
     return {
       users: [
         { id: "1", username: "Asep", email: "asep@email.com", role: "Admin" },
-
         { id: "2", username: "Budi", email: "budi@email.com", role: "User" },
       ],
     };
