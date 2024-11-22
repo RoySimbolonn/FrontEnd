@@ -1,40 +1,30 @@
 <template>
   <div id="app">
     <MainHeader
+      v-if="showHeader"
       :currentRole="currentRole"
-      :isSidebarVisible="isSidebarVisible"
       @update-role="updateRole"
       @toggle-sidebar="toggleSidebar"
-    />
-    
-    <MainSidebar
-      :currentRole="currentRole"
       :isSidebarVisible="isSidebarVisible"
-      @showComponent="navigateTo"
     />
-    
-    <div class="main-container" :class="{
-      'with-sidebar': isSidebarVisible,
-      'no-sidebar': !isSidebarVisible,
-      'with-header': isHeaderVisible,
-      'no-header': !isHeaderVisible
-    }">
-      <router-view
-        :currentComponent="currentComponent"
-        @add-item="handleAddItem"
-        @edit-item="handleEditItem"
-        @delete-item="handleDeleteItem"
-      />
-    </div>
 
-    <!-- Floating Controls -->
-    <div class="layout-controls">
-      <button @click="toggleHeader" class="control-btn">
-        {{ isHeaderVisible ? 'Hide Header' : 'Show Header' }}
-      </button>
-      <button @click="toggleSidebar" class="control-btn">
-        {{ isSidebarVisible ? 'Hide Sidebar' : 'Show Sidebar' }}
-      </button>
+    <div class="app-content" :class="{ noHeader: !showMainHeader }">
+      <MainSidebar
+        v-if="showMainSidebar"
+        :currentRole="currentRole"
+        :isSidebarVisible="isSidebarVisible"
+        @showComponent="navigateTo"
+      />
+
+      <div
+        class="main-content"
+        :class="{ expanded: isSidebarVisible && showMainSidebar }"
+      >
+        <router-view
+          :key="$route.fullPath"
+          :currentComponent="$route.params.component"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -45,203 +35,141 @@ import MainSidebar from "./components/dashboard/MainSidebar.vue";
 import { EventBus } from "./eventBus";
 
 export default {
-  name: "App",
   components: {
     MainHeader,
-    MainSidebar
+    MainSidebar,
   },
-  
+
   data() {
     return {
-      currentRole: localStorage.getItem('role') || 'admin',
-      currentComponent: 'items',
-      isSidebarVisible: localStorage.getItem('sidebarVisible') === 'true',
-      isHeaderVisible: localStorage.getItem('headerVisible') === 'true',
+      currentRole: this.$route.name || "admin",
+
+      isSidebarVisible: true,
+
+      searchTerm: "",
     };
   },
 
-  watch: {
-    currentRole: {
-      handler(newRole) {
-        const isAuthenticated = Boolean(localStorage.getItem('auth'));
-        if (!isAuthenticated) {
-          this.$router.push('/login');
-          return;
-        }
+  computed: {
+    showHeader() {
+      return !this.$route.meta.hideHeader;
+    },
 
-        // Redirect based on role
-        const currentPath = this.$route.path;
-        if (newRole === 'admin' && !currentPath.includes('/admin')) {
-          this.$router.push({ name: 'admin', params: { component: this.currentComponent }});
-        } else if (newRole === 'user' && !currentPath.includes('/user')) {
-          this.$router.push({ name: 'user', params: { component: this.currentComponent }});
-        }
-      },
-      immediate: true
-    }
+    showSidebar() {
+      return !this.$route.meta.hideSidebar;
+    },
+  },
+
+  watch: {
+    "$route.name"(newRole) {
+      this.currentRole = newRole;
+    },
   },
 
   methods: {
-    toggleSidebar() {
-      this.isSidebarVisible = !this.isSidebarVisible;
-      localStorage.setItem('sidebarVisible', this.isSidebarVisible);
-    },
-
-    toggleHeader() {
-      this.isHeaderVisible = !this.isHeaderVisible;
-      localStorage.setItem('headerVisible', this.isHeaderVisible);
-    },
-
     updateRole(role) {
-      const isAuthenticated = Boolean(localStorage.getItem('auth'));
-      const authRole = localStorage.getItem('role');
-
-      if (isAuthenticated && authRole === role) {
-        this.currentRole = role;
-        localStorage.setItem('role', role);
-        this.$router.push({ 
-          name: role, 
-          params: { component: this.currentComponent }
-        });
-      } else {
-        alert("You do not have permission to switch to this role.");
-        this.$router.push({ name: 'login' });
-      }
+      this.currentRole = role;
     },
 
     navigateTo(component) {
-      const isAuthenticated = Boolean(localStorage.getItem('auth'));
-      if (!isAuthenticated) {
-        this.$router.push({ name: 'login' });
-        return;
+      if (this.currentRole === "ADMIN") {
+        this.$router.push({ name: "admin", params: { component } });
+      } else if (this.currentRole === "USER") {
+        this.$router.push({ name: "user" });
+      } else {
+        this.$router.push({ name: "login" });
       }
-
-      this.currentComponent = component;
-      this.$router.push({ 
-        name: this.currentRole, 
-        params: { component }
-      });
     },
 
-    handleAddItem(item) {
-      EventBus.emit('item-added', item);
+    toggleSidebar() {
+      this.isSidebarVisible = !this.isSidebarVisible;
     },
 
-    handleEditItem(item) {
-      EventBus.emit('item-edited', item);
-    },
+    handleSearch(newQuery) {
+      console.log("Search term:", newQuery);
 
-    handleDeleteItem(itemId) {
-      EventBus.emit('item-deleted', itemId);
-    },
-
-    handleKeydown(e) {
-      if (e.ctrlKey && e.key === 'b') {
-        this.toggleSidebar();
+      if (this.currentRole === "admin") {
+        console.log("Search in admin items");
+      } else if (this.currentRole === "user") {
+        console.log("Search in user items");
       }
-      if (e.ctrlKey && e.key === 'h') {
-        this.toggleHeader();
-      }
-    }
+    },
   },
 
-  created() {
-    // Set default states if not set
-    if (localStorage.getItem('sidebarVisible') === null) {
-      localStorage.setItem('sidebarVisible', 'true');
-      this.isSidebarVisible = true;
-    }
-    
-    if (localStorage.getItem('headerVisible') === null) {
-      localStorage.setItem('headerVisible', 'true');
-      this.isHeaderVisible = true;
-    }
-
-    // Keyboard shortcuts
-    window.addEventListener('keydown', this.handleKeydown);
+  mounted() {
+    EventBus.on("search", this.handleSearch);
   },
 
-  unmounted() {
-    window.removeEventListener('keydown', this.handleKeydown);
-  }
+  beforeUnmount() {
+    EventBus.off("search", this.handleSearch);
+  },
 };
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  height: 100vh;
-  position: relative;
-  overflow-x: hidden;
-}
 
-.main-container {
-  transition: all 0.3s ease;
-  padding: 20px;
-  min-height: calc(100vh - 80px);
-  background-color: #f5f5f5;
-}
+<style scoped>
+html,
+body {
+  height: 100%;
 
-/* Layout Classes */
-.main-container.with-sidebar {
-  margin-left: 250px;
-}
+  margin: 0;
 
-.main-container.no-sidebar {
-  margin-left: 0;
-}
-
-.main-container.with-header {
-  padding-top: 80px;
-}
-
-.main-container.no-header {
-  padding-top: 20px;
-}
-
-/* Floating Controls */
-.layout-controls {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  gap: 10px;
-  z-index: 1000;
-}
-
-.control-btn {
-  padding: 8px 16px;
   background-color: #4b3f6b;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0.8;
-  transition: opacity 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.control-btn:hover {
-  opacity: 1;
-  background-color: #5f4d8a;
+#app {
+  height: 100%;
+
+  display: flex;
+
+  flex-direction: column;
+
+  background-color: #4b3f6b;
 }
 
-/* Responsive Design */
+.app-content {
+  display: flex;
+
+  flex-grow: 1;
+
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+
+  font: 1em sans-serif;
+
+  height: calc(100vh - 60px);
+
+  margin-top: 60px;
+
+  background-color: #4b3f6b;
+}
+
+.main-content {
+  flex-grow: 1;
+
+  transition: margin-left 0.3s ease;
+}
+
+.main-content.expanded {
+  margin-left: 200px;
+}
+
+.app-content.noHeader {
+  margin-top: 0;
+
+  height: 100vh;
+}
+
 @media (max-width: 768px) {
-  .main-container.with-sidebar {
+  .main-content {
     margin-left: 0;
-  }
-  
-  .layout-controls {
-    bottom: 10px;
-    right: 10px;
-    flex-direction: column;
+
+    margin-top: 180px;
   }
 
-  .main-container {
-    padding: 10px;
+  .app-content.noHeader {
+    margin-top: 0;
+
+    height: calc(100vh - 60px);
   }
 }
 </style>
