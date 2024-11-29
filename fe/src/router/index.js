@@ -20,13 +20,9 @@ const routes = [
     meta: { hideHeader: true, hideSidebar: true },
 
     children: [
-
       {
-
         path: "login",
-
         name: "login",
-
         component: Login,
 
       },
@@ -85,31 +81,29 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
 
-  const authStore = useAuthStore();
+  const isAuthenticated = Boolean(localStorage.getItem("auth"));
 
-  const isAuthenticated = !!authStore.token;
+  const userRole = localStorage.getItem("role");
 
-  const userRole = authStore.role;
+  if (to.meta.requiresAuth && !isAuthenticated) {
 
-  if (to.meta.requiresAuth) {
+    alert("You need to log in to access this page.");
 
-    if (isAuthenticated) {
+    next({ name: "login" });
 
-      if (userRole === to.meta.role || to.meta.role === undefined) {
+  } else if (
 
-        next();
+    to.meta.requiresAuth &&
 
-      } else {
+    isAuthenticated &&
 
-        next({ name: "home" });
+    to.meta.role !== userRole
 
-      }
+  ) {
 
-    } else {
+    alert("You do not have permission to access this page.");
 
-      next({ name: "home" });
-
-    }
+    next(false);
 
   } else {
 
@@ -118,5 +112,28 @@ router.beforeEach((to, from, next) => {
   }
 
 });
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+  
+  // Gunakan getter isAuthenticated dari store
+  const isAuthenticated = authStore.isAuthenticated;
+  const userRole = authStore.role;
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    alert("You need to log in to access this page.");
+    next({ name: "login" });
+  } else if (
+    to.meta.requiresAuth &&
+    isAuthenticated &&
+    to.meta.role !== userRole
+  ) {
+    alert("You do not have permission to access this page.");
+    next(false);
+  } else {
+    next();
+  }
+});
+
 
 export default router;

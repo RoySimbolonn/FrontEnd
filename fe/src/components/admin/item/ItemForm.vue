@@ -66,12 +66,12 @@ export default {
   props: {
     item: {
       type: Object,
-      required: true
+      default: () => ({}),
     },
     isEdit: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
 
   data() {
@@ -80,9 +80,9 @@ export default {
         kode: '',
         nama: '',
         deskripsi: '',
-        stok: 0
-      }
-    }
+        stok: 0,
+      },
+    };
   },
 
   watch: {
@@ -93,26 +93,48 @@ export default {
             kode: newItem.kode || '',
             nama: newItem.nama || '',
             deskripsi: newItem.deskripsi || '',
-            stok: newItem.stok || 0
-          }
+            stok: newItem.stok || 0,
+          };
         }
       },
-      immediate: true
-    }
+      immediate: true,
+    },
   },
 
   methods: {
-    submitForm() {
-      const formData = {
-        ...this.form,
-        stok: parseInt(this.form.stok),
-        kode: this.form.kode.toString()
+  submitForm() {
+    try {
+      // Tambahkan validasi lebih ketat
+      if (!this.form.kode.trim()) {
+        alert('Kode barang harus diisi!');
+        return;
       }
-      this.$emit('submit', formData)
+      if (!this.form.nama.trim()) {
+        alert('Nama barang harus diisi!');
+        return;
+      }
+      if (!this.form.deskripsi.trim()) {
+        alert('Deskripsi barang harus diisi!');
+        return;
+      }
+      if (this.form.stok < 0) {
+        alert('Stok tidak boleh negatif!');
+        return;
+      }
+
+      this.$emit('submit', { 
+        ...this.form,
+        stok: Number(this.form.stok) // Pastikan stok adalah angka
+      });
+    } catch (error) {
+      console.error('Error saat submit form:', error);
+      alert('Terjadi kesalahan saat menyimpan barang.');
     }
-  }
-}
+  },
+},
+};
 </script>
+
 
 <style scoped>
 .form-container {

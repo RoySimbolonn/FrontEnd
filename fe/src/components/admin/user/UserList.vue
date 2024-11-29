@@ -1,11 +1,56 @@
+<!-- UserManagement.vue -->
 <template>
   <div class="user-list">
     <div class="header">
       <h2>Daftar Pengguna</h2>
 
-      <button class="add-btn" @click="$emit('add-user')">
+      <button class="add-btn" @click="showAddUserModal = true">
         Tambah Pengguna
       </button>
+    </div>
+
+    <!-- Modal Tambah/Edit Pengguna -->
+    <div v-if="showAddUserModal" class="modal">
+      <div class="modal-content">
+        <span class="close" @click="closeModal">&times;</span>
+        <h3>{{ isEditing ? 'Edit Pengguna' : 'Tambah Pengguna Baru' }}</h3>
+        <form @submit.prevent="saveUser">
+          <input 
+            v-model="currentUser.username" 
+            type="text" 
+            placeholder="Username" 
+            required
+          >
+          <input 
+            v-model="currentUser.email" 
+            type="email" 
+            placeholder="Email" 
+            required
+          >
+          <input 
+            v-model="currentUser.phone" 
+            type="tel" 
+            placeholder="Telepon"
+          >
+          <input 
+            v-model="currentUser.address" 
+            type="text" 
+            placeholder="Alamat"
+          >
+          <select v-model="currentUser.role">
+            <option value="Admin">Admin</option>
+            <option value="User">User</option>
+          </select>
+          <div class="modal-actions">
+            <button type="submit" class="save-btn">
+              {{ isEditing ? 'Update' : 'Tambah' }}
+            </button>
+            <button type="button" class="cancel-btn" @click="closeModal">
+              Batal
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <div class="table-responsive">
@@ -15,23 +60,33 @@
             <th>ID</th>
             <th>Username</th>
             <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
             <th>Role</th>
             <th class="action-column">Aksi</th>
           </tr>
         </thead>
 
         <tbody>
-          <tr v-for="user in users" :key="user.id">
-            <td>{{ user.id }}</td>
+          <tr v-for="(user, index) in users" :key="index">
+            <td>{{ index + 1 }}</td>
             <td>{{ user.username }}</td>
             <td>{{ user.email }}</td>
+            <td>{{ user.phone }}</td>
+            <td>{{ user.address }}</td>
             <td>{{ user.role }}</td>
 
             <td class="action-buttons">
-              <button class="edit-btn" @click="$emit('edit-user', user)">
+              <button 
+                class="edit-btn" 
+                @click="editUser(index)"
+              >
                 Edit
               </button>
-              <button class="delete-btn" @click="deleteUser(user.id)">
+              <button 
+                class="delete-btn" 
+                @click="deleteUser(index)"
+              >
                 Delete
               </button>
             </td>
@@ -47,23 +102,101 @@ export default {
   data() {
     return {
       users: [
-        { id: "1", username: "Asep", email: "asep@email.com", role: "Admin" },
-        { id: "2", username: "Budi", email: "budi@email.com", role: "User" },
+        { 
+          username: "Asep", 
+          email: "asep@email.com", 
+          phone: "08111111111", 
+          address: "Alamat Asep", 
+          role: "Admin" 
+        },
+        { 
+          username: "Budi", 
+          email: "budi@email.com", 
+          phone: "08222222222", 
+          address: "Alamat Budi", 
+          role: "User" 
+        }
       ],
+      currentUser: {
+        username: '',
+        email: '',
+        phone: '',
+        address: '',
+        role: 'User'
+      },
+      showAddUserModal: false,
+      isEditing: false,
+      editIndex: -1
     };
   },
 
   methods: {
-    deleteUser(id) {
-      this.users = this.users.filter((user) => user.id !== id);
+    saveUser() {
+      // Validasi input
+      if (!this.currentUser.username || !this.currentUser.email) {
+        alert('Username dan Email wajib diisi!')
+        return
+      }
 
-      this.$emit("delete-user", id);
+      // Jika sedang edit
+      if (this.isEditing) {
+        this.users[this.editIndex] = { ...this.currentUser }
+      } 
+      // Jika tambah baru
+      else {
+        this.users.push({ ...this.currentUser })
+      }
+
+      // Reset form dan tutup modal
+      this.resetForm()
+      this.showAddUserModal = false
     },
-  },
+
+    editUser(index) {
+      // Set data yang akan diedit
+      this.currentUser = { ...this.users[index] }
+      this.isEditing = true
+      this.editIndex = index
+      this.showAddUserModal = true
+    },
+
+    deleteUser(index) {
+      // Konfirmasi sebelum hapus
+      if (confirm('Anda yakin ingin menghapus pengguna ini?')) {
+        this.users.splice(index, 1)
+      }
+    },
+
+    closeModal() {
+      this.resetForm()
+      this.showAddUserModal = false
+    },
+
+    resetForm() {
+      // Reset form ke kondisi awal
+      this.currentUser = {
+        username: '',
+        email: '',
+        phone: '',
+        address: '',
+        role: 'User'
+      }
+      this.isEditing = false
+      this.editIndex = -1
+    }
+  }
 };
 </script>
 
 <style scoped>
+.table-responsive {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 600px; /* Sesuaikan sesuai kebutuhan */
+}
 .user-list {
   padding: 24px;
   background-color: #fff;
@@ -252,6 +385,72 @@ tbody tr {
   animation: fadeIn 0.5s ease-out;
 }
 
+/* Modal Styles */
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+  position: relative;
+}
+
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-content input, 
+.modal-content select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: black;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.save-btn {
+  background-color: #754bc5;
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #f44336;
+  color: white;
+}
+
 @media (max-width: 600px) {
   .user-list {
     padding: 16px;
@@ -290,6 +489,11 @@ tbody tr {
   h2::after {
     left: 20%;
     width: 60%;
+  }
+
+  .modal-content {
+    width: 90%;
+    margin: 0 5%;
   }
 }
 </style>
